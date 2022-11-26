@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# optional argument handling
+if [[ "$1" == "start" ]]
+then
+    #Getting the IP Address of the server Pod
+    serverIP=$(kubectl get pod $2 -o jsonpath={.status.podIP})
+    echo $serverIP
+    echo "Starting Sockperf Server Install"
+    kubectl exec -it $2 -- apt update
+    kubectl exec -it $2 -- apt install sockperf
+    kubectl exec -it $2 -- echo $2
+    kubectl exec $2 -- sockperf sr --tcp -i $serverIP -p $4 &
+    echo "Starting Sockperf Client Tests"
+    kubectl exec -it $3 -- apt update
+    kubectl exec -it $3 -- apt install sockperf
+    kubectl exec -it $3 -- sockperf ping-pong -i $serverIP --tcp -m 350 -t 101 -p $4  --full-rtt
+    echo "Done"
+
+fi
+
+if [[ "$1" == "version" ]]
+then
+    echo "1.0.2"
+    exit 0
+fi
+
+# optional argument handling
+if [[ "$1" == "config" ]]
+then
+    echo "$KUBECONFIG"
+    exit 0
+fi
+
+echo "kubectl Sockperf Test Plugin v0.20211122"
+echo "Usage: kubectl-sockperf <pod server> <pod client> <port>"
